@@ -9,6 +9,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
@@ -18,6 +19,9 @@
             color: #0ff;
             font-family: 'Share Tech Mono', monospace;
             overflow: hidden;
+            user-select: none;
+            margin: 0;
+            padding: 0;
         }
 
         .scanlines {
@@ -39,26 +43,39 @@
             perspective: 1000px;
             width: 100vw;
             height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            position: relative;
+            z-index: 20;
+            overflow: hidden;
         }
 
         .hologram-panel {
             width: 600px;
             height: 400px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            
             border: 2px solid rgba(0, 255, 255, 0.5);
-            background: rgba(0, 20, 40, 0.6);
+            background: rgba(0, 20, 40, 0.85);
             box-shadow: 0 0 20px rgba(0, 255, 255, 0.2), inset 0 0 20px rgba(0, 255, 255, 0.1);
             backdrop-filter: blur(5px);
             transform-style: preserve-3d;
-            transition: transform 0.1s ease-out;
-            position: relative;
+            border-radius: 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            border-radius: 20px;
+            
+            cursor: grab;
+            transition: box-shadow 0.2s;
+        }
+        
+        .hologram-panel.grabbed {
+            box-shadow: 0 0 40px rgba(0, 255, 255, 0.6);
+            border-color: #fff;
+            cursor: grabbing;
+            z-index: 100;
         }
 
         .corner {
@@ -67,6 +84,7 @@
             height: 40px;
             border: 4px solid #0ff;
             box-shadow: 0 0 10px #0ff;
+            pointer-events: none;
         }
         .tl { top: -2px; left: -2px; border-right: 0; border-bottom: 0; }
         .tr { top: -2px; right: -2px; border-left: 0; border-bottom: 0; }
@@ -77,13 +95,14 @@
             font-family: 'Orbitron', sans-serif;
             text-transform: uppercase;
             text-shadow: 0 0 10px rgba(0, 255, 255, 0.8);
-            transition: all 0.3s;
+            pointer-events: none;
         }
 
         .status-text {
             font-size: 0.8rem;
             color: rgba(0, 255, 255, 0.7);
             margin-top: 10px;
+            pointer-events: none;
         }
 
         .monkey-mode {
@@ -103,13 +122,71 @@
             width: 100%;
             height: 100%;
             z-index: 5;
-            transform: scaleX(-1);
             pointer-events: none;
+        }
+
+        .holo-item {
+            position: absolute;
+            width: 90px;
+            height: 90px;
+            border: 1px solid rgba(0, 255, 255, 0.6);
+            background: rgba(0, 20, 40, 0.8);
+            color: #0ff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+            transition: box-shadow 0.2s;
+            cursor: grab;
+            z-index: 30;
+        }
+
+        .holo-item i { font-size: 2.5rem; margin-bottom: 5px; pointer-events: none; }
+        .holo-item span { font-size: 0.7rem; letter-spacing: 1px; pointer-events: none; }
+
+        .holo-item.grabbed {
+            box-shadow: 0 0 25px #0ff;
+            border-color: #fff;
+            transform: scale(1.1);
+            z-index: 100;
+        }
+
+        #hand-cursor {
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            background-color: rgba(255, 255, 255, 0.5);
+            border: 2px solid #0ff;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 999;
+            transition: width 0.1s, height 0.1s, background-color 0.1s;
+            box-shadow: 0 0 15px #0ff;
+        }
+
+        #hand-cursor.pinching {
+            background-color: #0ff;
+            width: 8px;
+            height: 8px;
+            box-shadow: 0 0 20px #fff;
+        }
+
+        #pinch-line {
+            position: absolute;
+            height: 2px;
+            background: #0ff;
+            transform-origin: 0 50%;
+            pointer-events: none;
+            z-index: 998;
+            display: none;
         }
 
         .loader {
             position: absolute;
-            z-index: 50;
+            z-index: 1000;
             background: #000;
             width: 100%;
             height: 100%;
@@ -118,7 +195,6 @@
             align-items: center;
             justify-content: center;
         }
-
         .spinner {
             width: 50px;
             height: 50px;
@@ -127,7 +203,6 @@
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
-
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
@@ -135,24 +210,40 @@
 
     <div id="loader" class="loader">
         <div class="spinner mb-4"></div>
-        <p class="text-cyan-400 tracking-widest">INITIALIZING HOLOGRAM SYSTEM...</p>
-        <p class="text-xs text-gray-500 mt-2">Please allow camera access</p>
+        <p class="text-cyan-400 tracking-widest">CALIBRATING SYSTEMS...</p>
+        <p class="text-xs text-gray-500 mt-2">Pastikan seluruh tangan terlihat di kamera</p>
     </div>
 
     <video id="input_video" style="display: none;"></video>
-
     <canvas id="output_canvas"></canvas>
+    
+    <div id="hand-cursor" style="display: none;"></div>
+    <div id="pinch-line"></div>
 
     <div class="scanlines"></div>
 
-    <div class="scene">
-        <div id="holo-panel" class="hologram-panel">
+    <div class="scene" id="scene-container">
+        
+        <div class="holo-item draggable" id="item-security" style="top: 15%; left: 15%;">
+            <i class="fas fa-shield-alt"></i>
+            <span>SECURE</span>
+        </div>
+        <div class="holo-item draggable" id="item-data" style="top: 15%; left: 80%;">
+            <i class="fas fa-database"></i>
+            <span>DATA</span>
+        </div>
+        <div class="holo-item draggable" id="item-power" style="top: 75%; left: 50%; transform: translateX(-50%);">
+            <i class="fas fa-bolt"></i>
+            <span>POWER</span>
+        </div>
+
+        <div id="holo-panel" class="hologram-panel draggable">
             <div class="corner tl"></div>
             <div class="corner tr"></div>
             <div class="corner bl"></div>
             <div class="corner br"></div>
 
-            <div class="text-center z-20">
+            <div class="text-center z-20 pointer-events-none">
                 <p class="text-xs tracking-[0.3em] mb-2 opacity-70">SYSTEM STATUS: ONLINE</p>
                 
                 <h1 id="main-text" class="text-5xl md:text-7xl font-bold tracking-tighter mb-4">
@@ -174,7 +265,9 @@
                     </div>
                 </div>
 
-                <p id="gesture-debug" class="status-text mt-8 blinking">WAITING FOR HAND INPUT...</p>
+                <p id="gesture-debug" class="status-text mt-8">
+                    CUBIT (PINCH) UNTUK GESER APAPUN
+                </p>
             </div>
         </div>
     </div>
@@ -183,14 +276,18 @@
         const videoElement = document.getElementById('input_video');
         const canvasElement = document.getElementById('output_canvas');
         const canvasCtx = canvasElement.getContext('2d');
-        const holoPanel = document.getElementById('holo-panel');
         const mainText = document.getElementById('main-text');
         const debugText = document.getElementById('gesture-debug');
         const loader = document.getElementById('loader');
+        const handCursor = document.getElementById('hand-cursor');
+        const pinchLine = document.getElementById('pinch-line');
+        const holoPanel = document.getElementById('holo-panel');
         const corners = document.querySelectorAll('.corner');
 
+        let draggedItem = null;
+        let dragOffset = { x: 0, y: 0 };
         let isCameraRunning = false;
-        
+
         function resizeCanvas() {
             canvasElement.width = window.innerWidth;
             canvasElement.height = window.innerHeight;
@@ -217,13 +314,74 @@
                 drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, {color: 'rgba(0, 255, 255, 0.2)', lineWidth: 2});
                 drawLandmarks(canvasCtx, landmarks, {color: '#00ffff', lineWidth: 1, radius: 3});
 
-                const palmX = landmarks[9].x; 
-                const palmY = landmarks[9].y;
+                const indexTip = landmarks[8];
+                const thumbTip = landmarks[4];
+                const palm = landmarks[9];
 
-                const rotateY = (palmX - 0.5) * 40; 
-                const rotateX = (palmY - 0.5) * -40;
+                const cursorX = (1 - indexTip.x) * canvasElement.width;
+                const cursorY = indexTip.y * canvasElement.height;
 
-                holoPanel.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+                handCursor.style.display = 'block';
+                handCursor.style.left = `${cursorX}px`;
+                handCursor.style.top = `${cursorY}px`;
+
+                if (draggedItem !== holoPanel) {
+                    const rotateY = ((1 - palm.x) - 0.5) * 30;
+                    const rotateX = (palm.y - 0.5) * -30;
+                    
+                    holoPanel.style.transform = `translate(-50%, -50%) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+                }
+
+                const pinchDistance = Math.hypot(
+                    (indexTip.x - thumbTip.x),
+                    (indexTip.y - thumbTip.y)
+                );
+
+                const PINCH_THRESHOLD = 0.05;
+                const isPinching = pinchDistance < PINCH_THRESHOLD;
+
+                if (isPinching) {
+                    handCursor.classList.add('pinching');
+
+                    if (draggedItem) {
+                        let newLeft = cursorX - dragOffset.x;
+                        let newTop = cursorY - dragOffset.y;
+
+                        if (draggedItem === holoPanel) {
+                            draggedItem.style.transform = "none"; 
+                        }
+
+                        draggedItem.style.left = `${newLeft}px`;
+                        draggedItem.style.top = `${newTop}px`;
+                        
+                    } else {
+                        handCursor.style.display = 'none';
+                        let elementBelow = document.elementFromPoint(cursorX, cursorY);
+                        handCursor.style.display = 'block';
+
+                        let targetItem = elementBelow ? elementBelow.closest('.draggable') : null;
+
+                        if (targetItem) {
+                            draggedItem = targetItem;
+                            draggedItem.classList.add('grabbed');
+                            
+                            const rect = draggedItem.getBoundingClientRect();
+                            dragOffset.x = cursorX - rect.left;
+                            dragOffset.y = cursorY - rect.top;
+                        }
+                    }
+                } else {
+                    handCursor.classList.remove('pinching');
+                    if (draggedItem) {
+                        draggedItem.classList.remove('grabbed');
+                        
+                        if (draggedItem === holoPanel) {
+                             holoPanel.style.transform = `translate(0, 0) rotateX(0deg) rotateY(0deg)`;
+                        }
+                        
+                        draggedItem = null;
+                    }
+                }
 
                 if (detectVSign(landmarks)) {
                     activateMonkeyMode();
@@ -232,22 +390,24 @@
                 }
 
             } else {
-                holoPanel.style.transform = `rotateX(0deg) rotateY(0deg)`;
+                if (draggedItem) {
+                    draggedItem.classList.remove('grabbed');
+                    draggedItem = null;
+                }
+                handCursor.style.display = 'none';
                 deactivateMonkeyMode();
             }
+
             canvasCtx.restore();
         }
 
         function detectVSign(landmarks) {
             const indexTip = landmarks[8].y;
             const indexPip = landmarks[6].y;
-            
             const middleTip = landmarks[12].y;
             const middlePip = landmarks[10].y;
-            
             const ringTip = landmarks[16].y;
             const ringPip = landmarks[14].y;
-            
             const pinkyTip = landmarks[20].y;
             const pinkyPip = landmarks[18].y;
 
@@ -277,7 +437,7 @@
                 mainText.innerText = "SYSTEM READY";
                 mainText.classList.remove('monkey-mode');
                 holoPanel.classList.remove('monkey-border');
-                debugText.innerText = "HAND TRACKING ACTIVE";
+                debugText.innerText = "CUBIT (PINCH) UNTUK GESER APAPUN";
                 debugText.style.color = "rgba(0, 255, 255, 0.7)";
                 
                 corners.forEach(c => c.style.borderColor = "#0ff");
