@@ -6,7 +6,6 @@
     <title>Lumina 3D: V-Sign Text System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <!-- MediaPipe Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
     <style>
@@ -45,7 +44,7 @@
     <div class="fixed inset-0 pointer-events-none flex flex-col justify-between p-8 z-10">
         <div class="flex justify-between items-start pointer-events-auto">
             <div class="space-y-1">
-                <h1 class="text-3xl font-bold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-yellow-500">LUMINA MONKEY</h1>
+                <h1 class="text-3xl font-bold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-yellow-500">LUMINA PROJECT</h1>
                 <div class="flex items-center gap-2">
                     <div id="status-dot" class="w-2 h-2 rounded-full bg-cyan-500"></div>
                     <p id="status-text" class="text-[10px] text-gray-400 uppercase tracking-[0.2em]">Sistem Siap...</p>
@@ -82,6 +81,9 @@
                         <button onclick="setPattern('sphere')" class="pattern-btn glass py-3 rounded-xl text-xs hover:bg-white/5 active-pattern" id="btn-sphere">Sphere</button>
                         <button onclick="setPattern('torus')" class="pattern-btn glass py-3 rounded-xl text-xs hover:bg-white/5" id="btn-torus">Torus</button>
                         <button onclick="setPattern('heart')" class="pattern-btn glass py-3 rounded-xl text-xs hover:bg-white/5" id="btn-heart">Heart</button>
+                        <button onclick="setPattern('star')" class="pattern-btn glass py-3 rounded-xl text-xs hover:bg-white/5" id="btn-star">Star</button>
+                        <button onclick="setPattern('dna')" class="pattern-btn glass py-3 rounded-xl text-xs hover:bg-white/5" id="btn-dna">DNA</button>
+                        <button onclick="setPattern('chaos')" class="pattern-btn glass py-3 rounded-xl text-xs hover:bg-white/5" id="btn-chaos">Chaos</button>
                     </div>
                 </div>
                 <div class="flex items-center justify-between border-t border-white/5 pt-4">
@@ -155,7 +157,6 @@
             setPattern('sphere');
         }
 
-        // Fungsi pembuat teks menjadi koordinat 3D
         function generateTextPositions(text) {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
@@ -163,7 +164,7 @@
             canvas.height = 200;
             
             ctx.fillStyle = 'white';
-            ctx.font = 'bold 80px Arial';
+            ctx.font = 'bold 60px Arial';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText(text, 500, 100);
@@ -171,21 +172,19 @@
             const imageData = ctx.getImageData(0, 0, 1000, 200).data;
             const points = [];
             
-            // Sampling pixel yang berisi teks
             for (let y = 0; y < 200; y += 2) {
                 for (let x = 0; x < 1000; x += 2) {
                     const alpha = imageData[(y * 1000 + x) * 4 + 3];
                     if (alpha > 128) {
                         points.push({
-                            x: (x - 500) * 0.015,
-                            y: (100 - y) * 0.015,
-                            z: (Math.random() - 0.5) * 0.2
+                            x: (x - 500) * 0.012,
+                            y: (100 - y) * 0.012,
+                            z: (Math.random() - 0.5) * 0.1
                         });
                     }
                 }
             }
 
-            // Map poin ke partikel yang ada
             for (let i = 0; i < PARTICLE_COUNT; i++) {
                 const p = points[i % points.length];
                 targetPositions[i * 3] = p.x;
@@ -225,6 +224,22 @@
                     x = 0.18 * (16 * Math.pow(Math.sin(t), 3));
                     y = 0.18 * (13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t));
                     z = (Math.random() - 0.5) * 0.8;
+                } else if (type === 'star') {
+                    const angle = Math.random() * Math.PI * 2;
+                    const r = (i % 2 === 0 ? 3 : 1.2) * Math.random();
+                    x = r * Math.cos(angle);
+                    y = r * Math.sin(angle);
+                    z = (Math.random() - 0.5) * 0.5;
+                } else if (type === 'dna') {
+                    const t = (i / PARTICLE_COUNT) * Math.PI * 10;
+                    const side = i % 2 === 0 ? 1 : -1;
+                    x = Math.cos(t) * side;
+                    y = (i / PARTICLE_COUNT - 0.5) * 8;
+                    z = Math.sin(t) * side;
+                } else {
+                    x = (Math.random() - 0.5) * 10;
+                    y = (Math.random() - 0.5) * 10;
+                    z = (Math.random() - 0.5) * 10;
                 }
                 targetPositions[i3] = x;
                 targetPositions[i3+1] = y;
@@ -268,13 +283,10 @@
             if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
                 const landmarks = results.multiHandLandmarks[0];
                 
-                // Rotasi Kinetik
                 const center = landmarks[9];
                 targetRotY = (center.x - 0.5) * 3; 
                 targetRotX = (center.y - 0.5) * 3;
 
-                // Analisis Jari untuk V-Sign
-                const wrist = landmarks[0];
                 const indexTip = landmarks[8];
                 const middleTip = landmarks[12];
                 const ringTip = landmarks[16];
@@ -285,7 +297,6 @@
                 const isRingClosed = ringTip.y > landmarks[14].y;
                 const isPinkyClosed = pinkyTip.y > landmarks[18].y;
 
-                // Logika V-Sign: Telunjuk & Tengah UP, Manis & Kelingking DOWN
                 if (isIndexExtended && isMiddleExtended && isRingClosed && isPinkyClosed) {
                     if (!isVSignActive) {
                         isVSignActive = true;
@@ -302,7 +313,6 @@
                         document.getElementById('v-sign-status').classList.add('hidden');
                     }
                     
-                    // Logika Skala Standar (Buka/Tutup)
                     let extendedCount = 0;
                     [8,12,16,20].forEach(id => { if(landmarks[id].y < landmarks[id-2].y) extendedCount++; });
 
