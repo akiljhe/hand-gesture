@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lumina 3D: V-Sign Text System</title>
+    <title>Lumina 3D: Atomic Element System Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
@@ -11,16 +11,12 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;400;700&display=swap');
         body { margin: 0; overflow: hidden; background-color: #020205; font-family: 'Plus Jakarta Sans', sans-serif; color: white; }
-        canvas { display: block; filter: contrast(1.1) brightness(1.1); }
+        canvas { display: block; filter: contrast(1.2) brightness(1.1); }
         .glass {
-            background: rgba(10, 10, 15, 0.6);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(10, 10, 15, 0.75);
+            backdrop-filter: blur(30px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
-        }
-        .active-pattern {
-            background: rgba(59, 130, 246, 0.5) !important;
-            border-color: #3b82f6 !important;
         }
         #output-canvas {
             transform: scaleX(-1);
@@ -30,12 +26,16 @@
             object-fit: cover;
             border: 2px solid rgba(0, 242, 255, 0.3);
         }
-        .v-sign-glow {
-            animation: glow 1.5s ease-in-out infinite alternate;
+        input[type=range] {
+            accent-color: #00f2ff;
+            cursor: pointer;
         }
-        @keyframes glow {
-            from { text-shadow: 0 0 5px #fff, 0 0 10px #00f2ff; }
-            to { text-shadow: 0 0 10px #fff, 0 0 20px #00f2ff; }
+        .stat-box {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        #tutorial {
+            transition: opacity 2s ease-in-out;
         }
     </style>
 </head>
@@ -44,13 +44,13 @@
     <div class="fixed inset-0 pointer-events-none flex flex-col justify-between p-8 z-10">
         <div class="flex justify-between items-start pointer-events-auto">
             <div class="space-y-1">
-                <h1 class="text-3xl font-bold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-yellow-500">LUMINA PROJECT</h1>
+                <h1 class="text-3xl font-bold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-600">ATOMIC VISUALIZER</h1>
                 <div class="flex items-center gap-2">
                     <div id="status-dot" class="w-2 h-2 rounded-full bg-cyan-500"></div>
-                    <p id="status-text" class="text-[10px] text-gray-400 uppercase tracking-[0.2em]">Sistem Siap...</p>
+                    <p id="status-text" class="text-[10px] text-gray-400 uppercase tracking-[0.2em]">Mode Presisi 1:1</p>
                 </div>
             </div>
-            <button id="fullscreen-btn" class="glass p-4 rounded-2xl hover:bg-white/5 transition-all">
+            <button id="fullscreen-btn" class="glass p-4 rounded-2xl hover:bg-white/5 transition-all active:scale-95">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
             </button>
         </div>
@@ -67,32 +67,49 @@
                 </div>
                 <div class="space-y-1">
                     <div class="flex justify-between text-[9px] text-gray-500 uppercase font-bold">
-                        <span>Deteksi Gestur</span>
+                        <span>Status Sensor</span>
                         <span id="hand-label" class="text-cyan-500">Mencari...</span>
                     </div>
                     <div id="gesture-result" class="text-sm font-bold text-cyan-400 h-5 transition-all uppercase">---</div>
                 </div>
             </div>
 
-            <div class="glass p-8 rounded-[2rem] w-full max-w-md space-y-6">
+            <div class="glass p-8 rounded-[2rem] w-full max-md:max-w-xs max-w-md space-y-6">
                 <div class="space-y-4">
-                    <label class="text-[10px] uppercase tracking-[0.2em] text-gray-500">Kontrol Manual</label>
-                    <div class="grid grid-cols-3 gap-3">
-                        <button onclick="setPattern('sphere')" class="pattern-btn glass py-3 rounded-xl text-xs hover:bg-white/5 active-pattern" id="btn-sphere">Sphere</button>
-                        <button onclick="setPattern('torus')" class="pattern-btn glass py-3 rounded-xl text-xs hover:bg-white/5" id="btn-torus">Torus</button>
-                        <button onclick="setPattern('heart')" class="pattern-btn glass py-3 rounded-xl text-xs hover:bg-white/5" id="btn-heart">Heart</button>
-                        <button onclick="setPattern('star')" class="pattern-btn glass py-3 rounded-xl text-xs hover:bg-white/5" id="btn-star">Star</button>
-                        <button onclick="setPattern('dna')" class="pattern-btn glass py-3 rounded-xl text-xs hover:bg-white/5" id="btn-dna">DNA</button>
-                        <button onclick="setPattern('chaos')" class="pattern-btn glass py-3 rounded-xl text-xs hover:bg-white/5" id="btn-chaos">Chaos</button>
+                    <div class="flex justify-between items-center">
+                        <label class="text-[10px] uppercase tracking-[0.2em] text-gray-500">Pilih Unsur</label>
+                        <span id="element-name" class="text-xl font-bold text-cyan-400 tracking-wider">H (HIDROGEN)</span>
+                    </div>
+                    
+                    <div class="flex justify-between text-[10px] text-gray-400 border-b border-white/10 pb-2 mb-2">
+                        <span>No. Atom: <strong id="display-atomic-number" class="text-white">1</strong></span>
+                        <span>Massa Atom: <strong id="display-atomic-mass" class="text-white">1.008</strong></span>
+                    </div>
+
+                    <input type="range" id="element-slider" min="1" max="118" value="1" class="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer mb-4">
+                    
+                    <div class="grid grid-cols-3 gap-2 text-center">
+                        <div class="stat-box p-2 rounded-xl border-t-2 border-red-500/50">
+                            <div class="text-[8px] text-red-300 uppercase tracking-wider">Proton</div>
+                            <div id="val-proton" class="text-lg font-bold text-white">1</div>
+                        </div>
+                        <div class="stat-box p-2 rounded-xl border-t-2 border-gray-500/50">
+                            <div class="text-[8px] text-gray-300 uppercase tracking-wider">Neutron</div>
+                            <div id="val-neutron" class="text-lg font-bold text-white">0</div>
+                        </div>
+                        <div class="stat-box p-2 rounded-xl border-t-2 border-cyan-500/50">
+                            <div class="text-[8px] text-cyan-300 uppercase tracking-wider">Elektron</div>
+                            <div id="val-electron" class="text-lg font-bold text-white">1</div>
+                        </div>
                     </div>
                 </div>
                 <div class="flex items-center justify-between border-t border-white/5 pt-4">
                     <div class="space-y-2">
-                        <label class="text-[10px] uppercase tracking-[0.2em] text-gray-500 block">Warna Utama</label>
+                        <label class="text-[10px] uppercase tracking-[0.2em] text-gray-500 block">Warna Energi</label>
                         <input type="color" id="particle-color" value="#00f2ff" class="w-16 h-8 bg-transparent cursor-pointer">
                     </div>
                     <div id="v-sign-status" class="hidden flex items-center gap-2 bg-yellow-500/20 px-3 py-1 rounded-full border border-yellow-500/50">
-                        <span class="text-[9px] font-bold text-yellow-500 uppercase">V-Sign Detected!</span>
+                        <span class="text-[9px] font-bold text-yellow-500 uppercase">V-Sign Mode!</span>
                     </div>
                 </div>
             </div>
@@ -103,262 +120,319 @@
 
     <script>
         const PARTICLE_COUNT = 8000;
-        let scene, camera, renderer, particles, geometry, material;
+        let scene, camera, renderer, particles, geometry, material, atomGroup;
         let positions, targetPositions, colors;
-        
-        let currentScale = 1.0;
-        let targetScale = 1.0;
+        let currentScale = 1.0, targetScale = 1.0;
         let targetRotX = 0, targetRotY = 0;
-        let lerpFactor = 0.12;
         let isVSignActive = false;
-        let lastPatternBeforeV = 'sphere';
-
+        let currentElementZ = 1;
         let video, outCanvas, outCtx;
+        let orbitLines = [];
+        let nucleusLines = null;
+        let electronData = []; 
+
+        const elementNames = ["Hidrogen","Helium","Litium","Berilium","Boron","Karbon","Nitrogen","Oksigen","Fluorin","Neon","Natrium","Magnesium","Aluminium","Silikon","Fosfor","Belerang","Klorin","Argon","Kalium","Kalsium","Skandium","Titanium","Vanadium","Kromium","Mangan","Besi","Kobalt","Nikel","Tembaga","Seng","Galium","Germanium","Arsen","Selenium","Bromin","Kripton","Rubidium","Stronsium","Itrium","Zirkonium","Niobium","Molibden","Teknesium","Rutenium","Rodium","Paladium","Perak","Kadmium","Indium","Timah","Antimon","Telurium","Iodin","Xenon","Sesium","Barium","Lantanum","Serium","Praseodimium","Neodimium","Prometium","Samarium","Europium","Gadolinium","Terbium","Disprosium","Holmium","Erbium","Tulium","Iterbium","Lutesium","Hafnium","Tantalum","Wolfram","Renium","Osmium","Iridium","Platina","Emas","Raksa","Talium","Timbal","Bismut","Polonium","Astatin","Radon","Fransium","Radium","Aktinium","Torium","Protaktinium","Uranium","Neptunium","Plutonium","Amerisium","Kurium","Berkelium","Kalifornium","Einsteinium","Fermium","Mendelevium","Nobelium","Lawrensium","Rutherfordium","Dubnium","Seaborgium","Bohrium","Hassium","Meitnerium","Darmstadtium","Roentgenium","Kopernisium","Nihonium","Flerovium","Moskovium","Livermorium","Tennessin","Oganesson"];
+        const elementSymbols = ["H","He","Li","Be","B","C","N","O","F","Ne","Na","Mg","Al","Si","P","S","Cl","Ar","K","Ca","Sc","Ti","V","Cr","Mn","Fe","Co","Ni","Cu","Zn","Ga","Ge","As","Se","Br","Kr","Rb","Sr","Y","Zr","Nb","Mo","Tc","Ru","Rh","Pd","Ag","Cd","In","Sn","Sb","Te","I","Xe","Cs","Ba","La","Ce","Pr","Nd","Pm","Sm","Eu","Gd","Tb","Dy","Ho","Er","Tm","Yb","Lu","Hf","Ta","W","Re","Os","Ir","Pt","Au","Hg","Tl","Pb","Bi","Po","At","Rn","Fr","Ra","Ac","Th","Pa","U","Np","Pu","Am","Cm","Bk","Cf","Es","Fm","Md","No","Lr","Rf","Db","Sg","Bh","Hs","Mt","Ds","Rg","Cn","Nh","Fl","Mc","Lv","Ts","Og"];
+        
+        const atomicMasses = [
+            1.008, 4.0026, 6.94, 9.0122, 10.81, 12.011, 14.007, 15.999, 18.998, 20.180, 
+            22.990, 24.305, 26.982, 28.085, 30.974, 32.06, 35.45, 39.948, 39.098, 40.078, 
+            44.956, 47.867, 50.942, 51.996, 54.938, 55.845, 58.933, 58.693, 63.546, 65.38, 
+            69.723, 72.63, 74.922, 78.971, 79.904, 83.798, 85.468, 87.62, 88.906, 91.224, 
+            92.906, 95.95, 98, 101.07, 102.91, 106.42, 107.87, 112.41, 114.82, 118.71, 
+            121.76, 127.60, 126.90, 131.29, 132.91, 137.33, 138.91, 140.12, 140.91, 144.24, 
+            145, 150.36, 151.96, 157.25, 158.93, 162.50, 164.93, 167.26, 168.93, 173.05, 
+            174.97, 178.49, 180.95, 183.84, 186.21, 190.23, 192.22, 195.08, 196.97, 200.59, 
+            204.38, 207.2, 208.98, 209, 210, 222, 223, 226, 227, 232.04, 
+            231.04, 238.03, 237, 244, 243, 247, 247, 251, 252, 257, 
+            258, 259, 262, 267, 268, 271, 270, 269, 278, 281, 
+            281, 285, 286, 289, 289, 293, 294, 294
+        ];
+
+        function createCircleTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 32;
+            canvas.height = 32;
+            const ctx = canvas.getContext('2d');
+            
+            const gradient = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+            gradient.addColorStop(0, 'rgba(255,255,255,1)');
+            gradient.addColorStop(0.2, 'rgba(255,255,255,0.8)');
+            gradient.addColorStop(0.5, 'rgba(255,255,255,0.2)');
+            gradient.addColorStop(1, 'rgba(0,0,0,0)');
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 32, 32);
+            
+            return new THREE.CanvasTexture(canvas);
+        }
 
         function initThree() {
             scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.z = 7;
-
+            camera.position.z = 8;
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             document.getElementById('canvas-container').appendChild(renderer.domElement);
+            
+            atomGroup = new THREE.Group();
+            scene.add(atomGroup);
 
             geometry = new THREE.BufferGeometry();
             positions = new Float32Array(PARTICLE_COUNT * 3);
             targetPositions = new Float32Array(PARTICLE_COUNT * 3);
             colors = new Float32Array(PARTICLE_COUNT * 3);
-
-            const baseColor = new THREE.Color(0x00f2ff);
-            for (let i = 0; i < PARTICLE_COUNT; i++) {
-                const i3 = i * 3;
-                positions[i3] = (Math.random() - 0.5) * 20;
-                positions[i3+1] = (Math.random() - 0.5) * 20;
-                positions[i3+2] = (Math.random() - 0.5) * 20;
-                colors[i3] = baseColor.r; colors[i3+1] = baseColor.g; colors[i3+2] = baseColor.b;
-            }
-
+            
             geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
             geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-
+            
             material = new THREE.PointsMaterial({
-                size: 0.04,
+                size: 0.25, 
                 vertexColors: true,
                 transparent: true,
-                opacity: 0.8,
+                opacity: 1.0,
                 blending: THREE.AdditiveBlending,
-                sizeAttenuation: true
+                map: createCircleTexture(),
+                depthWrite: false
             });
-
+            
             particles = new THREE.Points(geometry, material);
-            scene.add(particles);
+            atomGroup.add(particles);
+            updateAtomicStructure(1);
+        }
 
-            setPattern('sphere');
+        function clearOrbits() {
+            orbitLines.forEach(line => atomGroup.remove(line));
+            orbitLines = [];
+            electronData = [];
+        }
+
+        function updateAtomicStructure(z) {
+            currentElementZ = z;
+            clearOrbits();
+
+            const name = elementNames[z-1];
+            const symbol = elementSymbols[z-1];
+            const massValue = atomicMasses[z-1];
+            const massNumber = Math.round(massValue);
+            
+            document.getElementById('element-name').innerText = `${symbol} (${name.toUpperCase()})`;
+            document.getElementById('display-atomic-number').innerText = z;
+            document.getElementById('display-atomic-mass').innerText = massValue.toFixed(3);
+
+            const protons = z;
+            const neutrons = Math.max(0, massNumber - protons);
+            const electrons = z;
+
+            document.getElementById('val-proton').innerText = protons;
+            document.getElementById('val-neutron').innerText = neutrons;
+            document.getElementById('val-electron').innerText = electrons;
+
+            const shellCapacity = [2, 8, 18, 32, 32, 18, 8];
+            const pColor = new THREE.Color(0xff3333); 
+            const nColor = new THREE.Color(0x888888); 
+            const eColor = new THREE.Color(document.getElementById('particle-color').value);
+            const colorAttr = geometry.attributes.color;
+
+            const nucleusCount = protons + neutrons;
+            
+            const nucleusRadius = 0.2 * Math.cbrt(nucleusCount); 
+
+            let particleIndex = 0;
+            for (let i = 0; i < nucleusCount; i++) {
+                const isProton = i < protons;
+                
+                const r = Math.random() * nucleusRadius;
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.acos(2 * Math.random() - 1);
+                
+                const tx = r * Math.sin(phi) * Math.cos(theta);
+                const ty = r * Math.sin(phi) * Math.sin(theta);
+                const tz = r * Math.cos(phi);
+                
+                targetPositions[particleIndex * 3] = tx;
+                targetPositions[particleIndex * 3 + 1] = ty;
+                targetPositions[particleIndex * 3 + 2] = tz;
+                
+                const c = isProton ? pColor : nColor;
+                colorAttr.setXYZ(particleIndex, c.r, c.g, c.b);
+                particleIndex++;
+            }
+
+            let eRemaining = electrons;
+            let shellIdx = 0;
+
+            while (eRemaining > 0 && shellIdx < shellCapacity.length) {
+                const inShell = Math.min(eRemaining, shellCapacity[shellIdx]);
+                const orbitRadius = 1.5 + shellIdx * 0.8;
+                const tiltX = shellIdx * 0.5;
+                const tiltZ = shellIdx * 0.3;
+
+                const curve = new THREE.EllipseCurve(0, 0, orbitRadius, orbitRadius);
+                const points = curve.getPoints(64);
+                const orbitGeom = new THREE.BufferGeometry().setFromPoints(points);
+                const orbitLine = new THREE.LineLoop(orbitGeom, new THREE.LineBasicMaterial({color: eColor, transparent: true, opacity: 0.3}));
+                orbitLine.rotation.x = tiltX;
+                orbitLine.rotation.z = tiltZ;
+                orbitLines.push(orbitLine);
+                atomGroup.add(orbitLine);
+
+                for (let i = 0; i < inShell; i++) {
+                    const angle = (i / inShell) * Math.PI * 2;
+                    
+                    electronData.push({
+                        index: particleIndex,
+                        radius: orbitRadius,
+                        angle: angle,
+                        speed: 0.02 / (shellIdx + 1), 
+                        tiltX: tiltX,
+                        tiltZ: tiltZ
+                    });
+
+                    colorAttr.setXYZ(particleIndex, eColor.r, eColor.g, eColor.b);
+                    particleIndex++;
+                }
+
+                eRemaining -= inShell;
+                shellIdx++;
+            }
+
+            for (let i = particleIndex; i < PARTICLE_COUNT; i++) {
+                targetPositions[i * 3] = 9999;
+                targetPositions[i * 3 + 1] = 9999;
+                targetPositions[i * 3 + 2] = 9999;
+                colorAttr.setXYZ(i, 0, 0, 0); 
+            }
+
+            colorAttr.needsUpdate = true;
         }
 
         function generateTextPositions(text) {
+            clearOrbits();
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
-            canvas.width = 1000;
-            canvas.height = 200;
-            
+            canvas.width = 1000; canvas.height = 200;
             ctx.fillStyle = 'white';
-            ctx.font = 'bold 60px Arial';
+            ctx.font = 'bold 50px Arial';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText(text, 500, 100);
-
             const imageData = ctx.getImageData(0, 0, 1000, 200).data;
-            const points = [];
             
-            for (let y = 0; y < 200; y += 2) {
-                for (let x = 0; x < 1000; x += 2) {
-                    const alpha = imageData[(y * 1000 + x) * 4 + 3];
-                    if (alpha > 128) {
-                        points.push({
-                            x: (x - 500) * 0.012,
-                            y: (100 - y) * 0.012,
-                            z: (Math.random() - 0.5) * 0.1
-                        });
+            const textPoints = [];
+            for (let y = 0; y < 200; y += 3) {
+                for (let x = 0; x < 1000; x += 3) {
+                    if (imageData[(y * 1000 + x) * 4 + 3] > 128) {
+                        textPoints.push({ x: (x - 500) * 0.012, y: (100 - y) * 0.012, z: (Math.random() - 0.5) * 0.1 });
                     }
                 }
             }
 
-            for (let i = 0; i < PARTICLE_COUNT; i++) {
-                const p = points[i % points.length];
-                targetPositions[i * 3] = p.x;
-                targetPositions[i * 3 + 1] = p.y;
-                targetPositions[i * 3 + 2] = p.z;
-            }
-        }
-
-        function setPattern(type) {
-            if (type === 'text') {
-                generateTextPositions("You Are Monkey");
-                return;
-            }
-
-            lastPatternBeforeV = type;
-            document.querySelectorAll('.pattern-btn').forEach(b => b.classList.remove('active-pattern'));
-            const targetBtn = document.getElementById(`btn-${type}`);
-            if (targetBtn) targetBtn.classList.add('active-pattern');
+            const tColor = new THREE.Color(0xffff00);
+            const colorAttr = geometry.attributes.color;
 
             for (let i = 0; i < PARTICLE_COUNT; i++) {
-                const i3 = i * 3;
-                let x, y, z;
-                if (type === 'sphere') {
-                    const phi = Math.acos(-1 + (2 * i) / PARTICLE_COUNT);
-                    const theta = Math.sqrt(PARTICLE_COUNT * Math.PI) * phi;
-                    x = 2.5 * Math.cos(theta) * Math.sin(phi);
-                    y = 2.5 * Math.sin(theta) * Math.sin(phi);
-                    z = 2.5 * Math.cos(phi);
-                } else if (type === 'torus') {
-                    const u = Math.random() * Math.PI * 2;
-                    const v = Math.random() * Math.PI * 2;
-                    x = (2.2 + 0.6 * Math.cos(v)) * Math.cos(u);
-                    y = (2.2 + 0.6 * Math.cos(v)) * Math.sin(u);
-                    z = 0.6 * Math.sin(v);
-                } else if (type === 'heart') {
-                    const t = Math.random() * Math.PI * 2;
-                    x = 0.18 * (16 * Math.pow(Math.sin(t), 3));
-                    y = 0.18 * (13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t));
-                    z = (Math.random() - 0.5) * 0.8;
-                } else if (type === 'star') {
-                    const angle = Math.random() * Math.PI * 2;
-                    const r = (i % 2 === 0 ? 3 : 1.2) * Math.random();
-                    x = r * Math.cos(angle);
-                    y = r * Math.sin(angle);
-                    z = (Math.random() - 0.5) * 0.5;
-                } else if (type === 'dna') {
-                    const t = (i / PARTICLE_COUNT) * Math.PI * 10;
-                    const side = i % 2 === 0 ? 1 : -1;
-                    x = Math.cos(t) * side;
-                    y = (i / PARTICLE_COUNT - 0.5) * 8;
-                    z = Math.sin(t) * side;
+                if (i < textPoints.length) {
+                    const p = textPoints[i];
+                    targetPositions[i * 3] = p.x;
+                    targetPositions[i * 3 + 1] = p.y;
+                    targetPositions[i * 3 + 2] = p.z;
+                    colorAttr.setXYZ(i, tColor.r, tColor.g, tColor.b);
                 } else {
-                    x = (Math.random() - 0.5) * 10;
-                    y = (Math.random() - 0.5) * 10;
-                    z = (Math.random() - 0.5) * 10;
+                    targetPositions[i * 3] = 9999;
                 }
-                targetPositions[i3] = x;
-                targetPositions[i3+1] = y;
-                targetPositions[i3+2] = z;
             }
+            colorAttr.needsUpdate = true;
         }
 
         function initLocalAI() {
             video = document.getElementById('video-preview');
             outCanvas = document.getElementById('output-canvas');
             outCtx = outCanvas.getContext('2d');
-            outCanvas.width = 140;
-            outCanvas.height = 105;
-
-            const hands = new Hands({
-                locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
-            });
-
-            hands.setOptions({
-                maxNumHands: 1,
-                modelComplexity: 1,
-                minDetectionConfidence: 0.6,
-                minTrackingConfidence: 0.6
-            });
-
+            const hands = new Hands({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}` });
+            hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.6, minTrackingConfidence: 0.6 });
             hands.onResults(onResults);
-
-            const cam = new Camera(video, {
-                onFrame: async () => { await hands.send({image: video}); },
-                width: 320, height: 240
-            });
+            const cam = new Camera(video, { onFrame: async () => { await hands.send({image: video}); }, width: 320, height: 240 });
             cam.start();
-            document.getElementById('status-text').innerText = "V-SIGN ENGINE AKTIF";
         }
 
         function onResults(results) {
             outCtx.save();
             outCtx.clearRect(0, 0, outCanvas.width, outCanvas.height);
             outCtx.drawImage(results.image, 0, 0, outCanvas.width, outCanvas.height);
-            
             if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
                 const landmarks = results.multiHandLandmarks[0];
-                
-                const center = landmarks[9];
-                targetRotY = (center.x - 0.5) * 3; 
-                targetRotX = (center.y - 0.5) * 3;
-
-                const indexTip = landmarks[8];
-                const middleTip = landmarks[12];
-                const ringTip = landmarks[16];
-                const pinkyTip = landmarks[20];
-
-                const isIndexExtended = indexTip.y < landmarks[6].y;
-                const isMiddleExtended = middleTip.y < landmarks[10].y;
-                const isRingClosed = ringTip.y > landmarks[14].y;
-                const isPinkyClosed = pinkyTip.y > landmarks[18].y;
-
-                if (isIndexExtended && isMiddleExtended && isRingClosed && isPinkyClosed) {
-                    if (!isVSignActive) {
-                        isVSignActive = true;
-                        setPattern('text');
-                        document.getElementById('v-sign-status').classList.remove('hidden');
-                    }
+                targetRotY = (landmarks[9].x - 0.5) * 4;
+                targetRotX = (landmarks[9].y - 0.5) * 4;
+                const isV = landmarks[8].y < landmarks[6].y && landmarks[12].y < landmarks[10].y && landmarks[16].y > landmarks[14].y && landmarks[20].y > landmarks[18].y;
+                if (isV) {
+                    if (!isVSignActive) { isVSignActive = true; generateTextPositions("You Are Monkey"); document.getElementById('v-sign-status').classList.remove('hidden'); }
                     targetScale = 1.8;
-                    document.getElementById('gesture-result').innerText = "PEACE / V-SIGN";
-                    document.getElementById('gesture-result').className = "text-sm font-bold text-yellow-400";
                 } else {
-                    if (isVSignActive) {
-                        isVSignActive = false;
-                        setPattern(lastPatternBeforeV);
-                        document.getElementById('v-sign-status').classList.add('hidden');
-                    }
-                    
-                    let extendedCount = 0;
-                    [8,12,16,20].forEach(id => { if(landmarks[id].y < landmarks[id-2].y) extendedCount++; });
-
-                    if (extendedCount >= 3) {
-                        targetScale = 2.8;
-                        document.getElementById('gesture-result').innerText = "TERBUKA";
-                        document.getElementById('gesture-result').className = "text-sm font-bold text-cyan-400";
-                    } else {
-                        targetScale = 0.4;
-                        document.getElementById('gesture-result').innerText = "MENGEPAL";
-                        document.getElementById('gesture-result').className = "text-sm font-bold text-red-400";
-                    }
+                    if (isVSignActive) { isVSignActive = false; updateAtomicStructure(currentElementZ); document.getElementById('v-sign-status').classList.add('hidden'); }
+                    let ext = 0; [8,12,16,20].forEach(id => { if(landmarks[id].y < landmarks[id-2].y) ext++; });
+                    targetScale = ext >= 3 ? 2.5 : 0.5;
+                    document.getElementById('gesture-result').innerText = ext >= 3 ? "OPEN" : "CLOSED";
                 }
-            } else {
-                targetScale = 1.0;
-                document.getElementById('gesture-result').innerText = "MENCARI TANGAN...";
-            }
+            } else { targetScale = 1.0; document.getElementById('gesture-result').innerText = "MENCARI..."; }
             outCtx.restore();
         }
 
         function animate() {
             requestAnimationFrame(animate);
             currentScale += (targetScale - currentScale) * 0.1;
-            particles.rotation.x += (targetRotX - particles.rotation.x) * 0.1;
-            particles.rotation.y += (targetRotY - particles.rotation.y) * 0.1;
+            
+            atomGroup.rotation.x += (targetRotX - atomGroup.rotation.x) * 0.08;
+            atomGroup.rotation.y += (targetRotY - atomGroup.rotation.y) * 0.08;
+            atomGroup.scale.setScalar(currentScale);
 
             const pos = geometry.attributes.position.array;
+            
+            if (!isVSignActive) {
+                const tempVec = new THREE.Vector3();
+                const tempEuler = new THREE.Euler();
+
+                electronData.forEach(e => {
+                    e.angle += e.speed;
+                    const i3 = e.index * 3;
+                    
+                    tempVec.set(
+                        Math.cos(e.angle) * e.radius,
+                        Math.sin(e.angle) * e.radius,
+                        0
+                    );
+
+                    tempEuler.set(e.tiltX, 0, e.tiltZ);
+                    tempVec.applyEuler(tempEuler);
+
+                    targetPositions[i3] = tempVec.x;
+                    targetPositions[i3 + 1] = tempVec.y;
+                    targetPositions[i3 + 2] = tempVec.z;
+                });
+            }
+
             for (let i = 0; i < PARTICLE_COUNT; i++) {
                 const i3 = i * 3;
-                const tx = targetPositions[i3] * currentScale;
-                const ty = targetPositions[i3+1] * currentScale;
-                const tz = targetPositions[i3+2] * currentScale;
-                pos[i3] += (tx - pos[i3]) * 0.15;
-                pos[i3+1] += (ty - pos[i3+1]) * 0.15;
-                pos[i3+2] += (tz - pos[i3+2]) * 0.15;
+                if (targetPositions[i3] > 9000) {
+                    pos[i3] = 9999; pos[i3+1] = 9999; pos[i3+2] = 9999;
+                } else {
+                    pos[i3] += (targetPositions[i3] - pos[i3]) * 0.15;
+                    pos[i3+1] += (targetPositions[i3+1] - pos[i3+1]) * 0.15;
+                    pos[i3+2] += (targetPositions[i3+2] - pos[i3+2]) * 0.15;
+                }
             }
+            
             geometry.attributes.position.needsUpdate = true;
-            particles.rotation.y += 0.001;
             renderer.render(scene, camera);
         }
 
-        document.getElementById('particle-color').addEventListener('input', (e) => {
-            const c = new THREE.Color(e.target.value);
-            const colorsAttr = geometry.attributes.color;
-            for(let i=0; i<PARTICLE_COUNT; i++) colorsAttr.setXYZ(i, c.r, c.g, c.b);
-            colorsAttr.needsUpdate = true;
+        document.getElementById('element-slider').addEventListener('input', (e) => {
+            if (!isVSignActive) updateAtomicStructure(parseInt(e.target.value));
+        });
+
+        document.getElementById('particle-color').addEventListener('input', () => {
+            if (!isVSignActive) updateAtomicStructure(currentElementZ);
         });
 
         document.getElementById('fullscreen-btn').addEventListener('click', () => {
@@ -366,7 +440,17 @@
             else document.exitFullscreen();
         });
 
-        window.onload = () => { initThree(); initLocalAI(); animate(); };
+        window.onload = () => { 
+            initThree(); 
+            initLocalAI(); 
+            animate(); 
+            
+            setTimeout(() => {
+                const tutorial = document.getElementById('tutorial');
+                if(tutorial) tutorial.style.opacity = '0';
+            }, 6000);
+        };
+        
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
